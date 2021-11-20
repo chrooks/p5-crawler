@@ -17,8 +17,7 @@ args = parser.parse_args()
 HOST = "fakebook.3700.network"
 PORT = 443
 CSRF = ""
-cookie = ""
-
+COOKIE = ""
 
 
 # Generates the GET Request with given headers
@@ -26,18 +25,20 @@ def get(domain, referer=""):
     request = "GET " + domain + " HTTP/1.1" + CRLF + \
               "Host: " + HOST + CRLF + \
               "Referer: " + referer + CRLF + \
-              "Cookie: " + cookie + CRLF + CRLF
+              "Cookie: " + COOKIE + CRLF + CRLF
     if DEBUG: print(request)
     return request
 
 
 # Generates the POST Request with given headers
 def post(domain, body, has_cookie=False):
-    cookie_or_csrf = ""
+    # On initial login, there we do not have a cookie so we must pass the
+    # csrf token in the cookie header
     if (has_cookie):
-        cookie_or_csrf = cookie
+        cookie_or_csrf = COOKIE
     else:
         cookie_or_csrf = "csrftoken=" + CSRF
+
     request = "POST " + domain + " HTTP/1.1" + CRLF + \
               "Host: " + HOST + CRLF + \
               "Content-Type: application/x-www-form-urlencoded" + CRLF + \
@@ -60,15 +61,20 @@ socket = context.wrap_socket(s, server_hostname=HOST)
 
 ### GET Request for login page (to get csrf token) ###
 socket.send(get(domain='/accounts/login/?next=/fakebook/').encode())
-login_page = socket.recv(3000).decode()
+page = socket.recv(3000).decode()
 
-### Getting the csrf (cookie) from the login page ###
-csrf_index = login_page.index(
+### Parsing the login page to find the csrf ###
+csrf_index = page.index(
     "csrfmiddlewaretoken\" value=\"") + 28  # length of string
-CSRF = login_page[csrf_index:].split("\"")[0]
+CSRF = page[csrf_index:].split("\"")[0]
 
 ### Creating the POST Request ###
 body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={CSRF}'
 socket.send(post(domain='/accounts/login/', body=body).encode())
+response = socket.recv(3000).decode()
 
-print(socket.recv(3000).decode())
+### Parsing the homepage to find the cookie ###
+cookie_index = response.index("Set-Cookie: sessionid=") + 22 # length of string
+COOKIE = response[cookie_index + 1:].split(";")[0]
+
+print(COOKIE)
