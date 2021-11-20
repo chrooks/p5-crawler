@@ -11,9 +11,9 @@ DEBUG = True
 CRLF = '\r\n'
 
 ### Argument Parser ####
-parser = argparse.ArgumentParser(description='crawl the web')
-parser.add_argument('username', type=str, help="Username")
-parser.add_argument('password', type=str, help="Password")
+parser = argparse.ArgumentParser(description='Uses the given login information to traverse FakeBook for 5 hidden secret keys')
+parser.add_argument('username', type=str, help="FakeBook username")
+parser.add_argument('password', type=str, help="FakeBook Password")
 args = parser.parse_args()
 
 ### Setting up Host and Port ###
@@ -21,6 +21,8 @@ HOST = "fakebook.3700.network"
 PORT = 443
 CSRF = ""
 COOKIE = ""
+
+################################################################################
 
 # Writes given log message to stderr
 def log(string):
@@ -60,9 +62,6 @@ def post(domain, body, has_cookie=False):
               body
     #if DEBUG: print(request)
     return request
-
-
-
 
 ################################################################################
 
