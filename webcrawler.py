@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 
-import argparse, socket, ssl
+import sys
+import argparse 
+import socket
+import ssl
 
 ### Debug ###
 DEBUG = True
@@ -19,12 +22,16 @@ PORT = 443
 CSRF = ""
 COOKIE = ""
 
+# Writes given log message to stderr
+def log(string):
+  sys.stderr.write("DEBUG: " + string + "\n")
 
 # Generates the GET Request with given headers
 def get(domain, referer=""):
     request = "GET " + domain + " HTTP/1.1" + CRLF + \
               "Host: " + HOST + CRLF + \
               "Referer: " + referer + CRLF + \
+              "Accept-Encoding: gzip" + CRLF + \
               "Cookie: " + COOKIE + CRLF + CRLF
     if DEBUG: print(request)
     return request
@@ -43,6 +50,7 @@ def post(domain, body, has_cookie=False):
               "Host: " + HOST + CRLF + \
               "Content-Type: application/x-www-form-urlencoded" + CRLF + \
               "Content-Length: " + str(len(body)) + CRLF + \
+              "Accept-Encoding: gzip" + CRLF + \
               "Cookie: " + cookie_or_csrf + CRLF + CRLF + \
               body
     #if DEBUG: print(request)
