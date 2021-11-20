@@ -24,7 +24,7 @@ COOKIE = ""
 
 # Writes given log message to stderr
 def log(string):
-  sys.stderr.write("DEBUG: " + string + "\n")
+  if DEBUG: sys.stderr.write("DEBUG: " + string + "\n")
 
 # Generates the GET Request with given headers
 def get(domain, referer=""):
