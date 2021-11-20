@@ -3,8 +3,8 @@
 import argparse, socket, ssl
 
 ### Debug ###
-# DEBUG = True
-DEBUG = False
+DEBUG = True
+# DEBUG = False
 CRLF = '\r\n'
 
 ### Argument Parser ####
@@ -45,8 +45,10 @@ def post(domain, body, has_cookie=False):
               "Content-Length: " + str(len(body)) + CRLF + \
               "Cookie: " + cookie_or_csrf + CRLF + CRLF + \
               body
-    if DEBUG: print(request)
+    #if DEBUG: print(request)
     return request
+
+
 
 
 ################################################################################
@@ -73,8 +75,13 @@ body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfm
 socket.send(post(domain='/accounts/login/', body=body).encode())
 response = socket.recv(3000).decode()
 
-### Parsing the homepage to find the cookie ###
-cookie_index = response.index("Set-Cookie: sessionid=") + 22 # length of string
+### Parsing the POST Response to find the cookie ###
+cookie_index = response.index("Set-Cookie: sessionid=") + 22  # length of string
 COOKIE = response[cookie_index + 1:].split(";")[0]
 
-print(COOKIE)
+### GET Request for homepage ###
+''' Make helper to get the current location of the domain from the POST'''
+socket.send(get(domain='/fakebook/').encode())
+page = socket.recv(3000).decode()
+
+print(page)
