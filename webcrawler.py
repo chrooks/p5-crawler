@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+'''
+Your login credentials for Fakebook are:
+username: brooks.ch
+password: IO0VSGNDMCJ5E41Q
+'''
+
 import sys
 import argparse 
 import socket
@@ -30,9 +36,12 @@ def log(string):
 
 # Generates the GET Request with given headers
 def get(domain, referer="", has_cookie=False):
+    
     if (has_cookie):
         cookie_or_csrf = "csrftoken=" + CSRF + "; sessionid=" + COOKIE
+        log(f"Submitting GET request to {domain} using cookie: {cookie_or_csrf}.")
     else:
+        log(f"Submitting GET request to {domain}.")
         cookie_or_csrf = "csrftoken=" + CSRF
 
     ''' Implement gzip encoding '''
@@ -40,7 +49,6 @@ def get(domain, referer="", has_cookie=False):
               "Host: " + HOST + CRLF + \
               "Referer: " + referer + CRLF + \
               "Cookie: " + cookie_or_csrf + CRLF + CRLF
-    if DEBUG: print(request)
     return request
 
 
@@ -60,7 +68,7 @@ def post(domain, body, has_cookie=False):
               "Accept-Encoding: gzip" + CRLF + \
               "Cookie: " + cookie_or_csrf + CRLF + CRLF + \
               body
-    #if DEBUG: print(request)
+    #if DEBUG: log(request)
     return request
 
 
@@ -72,14 +80,22 @@ def get_csrfmiddlewaretoken(page):
 
 # Get the csrftoken and sessionId from response
 def get_csrftoken_and_cookie(request_response):
+    log("")
 # cookie_index = response.index("Set-Cookie: sessionid=") + 22
 # COOKIE = response[cookie_index + 1:].split(";")[0]
+
+# parses a HTTP 1.1 response and converts it to a Dictionary
+def parse_response(response):
+    log("Parsing response...")
+    
+    
 
 
 ################################################################################
 
 
 ### Setting up the socket ###
+log("Creating and wrapping socket...")
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 s.connect((socket.gethostbyname(HOST), PORT))  # Connects to the socket
 
@@ -87,20 +103,20 @@ context = ssl.create_default_context()
 socket = context.wrap_socket(s, server_hostname=HOST)
 
 ### GET Request for login page (to get csrf token) ###
+log("Getting initial login page")
 socket.send(get(domain='/accounts/login/?next=/fakebook/').encode())
 page = socket.recv(3000).decode()
-
-print(page)
+log("Response: " + page + "\n")
 
 # ### Parsing the login page to find the csrf ###
 CSRF = get_csrfmiddlewaretoken(page)
 
 # ### Creating the POST Request ###
+log("Posting login information.")
 body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={CSRF}'
 socket.send(post(domain='/accounts/login/', body=body).encode())
 response = socket.recv(3000).decode()
-
-if DEBUG: print(f"POST REQUEST RESPONSE\n{response}")
+log("Response: " + response + "\n")
 
 ### Parsing the POST Response to find the cookie ###
 # ''' Make helper to get the cookie'''
