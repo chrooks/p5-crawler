@@ -11,13 +11,9 @@ import argparse
 import socket
 import ssl
 import gzip
+from bs4 import BeautifulSoup
 
-### Debug ###
-DEBUG = True
-# DEBUG = False
-
-CRLF = '\r\n'
-
+# Headers 
 STATS = "Status Code"
 CONTY = "Content-Type"
 CONLN = "Content-Length"
@@ -30,17 +26,23 @@ SESID = "Session ID"
 
 RELEVANT_HEADERS = [STATS, CONTY, CONLN, LOCAT, SETCO]
 
+# Globals 
+HOST = "fakebook.3700.network"
+PORT = 443
+CSRF = ""
+COOKIE = ""
+
+DEBUG = True
+# DEBUG = False
+
+CRLF = '\r\n'
+
 ### Argument Parser ####
 parser = argparse.ArgumentParser(
     description='Uses the given login information to traverse FakeBook for 5 hidden secret keys')
 parser.add_argument('username', type=str, help="FakeBook username")
 parser.add_argument('password', type=str, help="FakeBook Password")
 args = parser.parse_args()
-
-### Setting up Host and Port ###
-HOST = "fakebook.3700.network"
-PORT = 443
-
 
 ###############################################################################
 
@@ -128,8 +130,7 @@ def parse_response(raw_response):
 
     log(f"parse_response: Finished building dictionary from response")
     return dictionary
-
-
+  
 # Goes through login protocol and returns the server's response containing the homepage
 def login():
     ### Setting up the socket ###
@@ -166,4 +167,6 @@ def login():
 
 response = login()
 homepage = response[CNTNT]
+
 log(homepage)
+
