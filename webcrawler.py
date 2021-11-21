@@ -65,7 +65,16 @@ def post(domain, body, has_cookie=False):
 
 
 # Get the csrfmiddlewaretoken from given html
-def get_csrfmiddlewaretoken():
+def get_csrfmiddlewaretoken(page):
+    csrf_index = page.index("csrfmiddlewaretoken\" value=\"") + 28
+    return page[csrf_index:].split("\"")[0]
+
+
+# Get the csrftoken and sessionId from response
+def get_csrftoken_and_cookie(request_response):
+# cookie_index = response.index("Set-Cookie: sessionid=") + 22
+# COOKIE = response[cookie_index + 1:].split(";")[0]
+
 
 ################################################################################
 
@@ -84,18 +93,16 @@ page = socket.recv(3000).decode()
 print(page)
 
 # ### Parsing the login page to find the csrf ###
-# ''' Make helper to get the csrf'''
-# csrf_index = page.index("csrfmiddlewaretoken\" value=\"") + 28
-# CSRF = page[csrf_index:].split("\"")[0]
-#
+CSRF = get_csrfmiddlewaretoken(page)
+
 # ### Creating the POST Request ###
-# body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={CSRF}'
-# socket.send(post(domain='/accounts/login/', body=body).encode())
-# response = socket.recv(3000).decode()
-#
-# if DEBUG: print(f"POST REQUEST RESPONSE\n{response}")
-#
-# ### Parsing the POST Response to find the cookie ###
+body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={CSRF}'
+socket.send(post(domain='/accounts/login/', body=body).encode())
+response = socket.recv(3000).decode()
+
+if DEBUG: print(f"POST REQUEST RESPONSE\n{response}")
+
+### Parsing the POST Response to find the cookie ###
 # ''' Make helper to get the cookie'''
 # cookie_index = response.index("Set-Cookie: sessionid=") + 22
 # COOKIE = response[cookie_index + 1:].split(";")[0]
