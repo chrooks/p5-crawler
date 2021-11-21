@@ -116,16 +116,16 @@ def parse_response(raw_response):
             log(f"parse_response: {ii}: added [{STATS}] = {curr_line[9:]}")
             dictionary[STATS] = curr_line[9:]
             
-        elif curr_line == '': # adds content when first empty line is encountered
-            log(f"parse_response: {ii}: encountered empty line at {ii}, adding rest of response to [{CNTNT}] field")
-            rest = "".join(resp_list[ii + 1:-1])
+        elif curr_line == '': 
+            # adds content when first empty line is encountered
+            log(f"parse_response: {ii}: encountered empty line, adding rest of response to [{CNTNT}] field")
+            rest = "".join(resp_list[ii + 1:-1]) 
             dictionary[CNTNT] = rest
             break
         
         else:
-            temp = curr_line.split(":")
-            header = temp[0]
-            value = temp[1][1:] # trim leading whitespace
+            (header, value) = curr_line.split(":", 1)
+            value = value[1:] # trim leading space
             
             if header in RELEVANT_HEADERS:
                 
@@ -166,6 +166,8 @@ log(f"CSRF from the login page: {CSRF}")
 # ### Creating the POST Request ###
 log("Posting login information.")
 body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={CSRF}'
+
+# ### Receiving response ###
 socket.send(post(domain='/accounts/login/', body=body).encode())
 response = socket.recv(3000).decode()
 test = parse_response(response)
