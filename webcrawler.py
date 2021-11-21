@@ -14,13 +14,27 @@ import ssl
 ### Debug ###
 DEBUG = True
 # DEBUG = False
+
 CRLF = '\r\n'
+
+STATS = "Status Code"
+CONTY = "Content-Type"
+CONLN = "Content-Length"
+LOCAT = "Location"
+SETCO = "Set-Cookie"
+
+CNTNT = "Content"
+CSRFT = "CSRF Token"
+SESID = "Session ID"
+
+RELEVANT_HEADERS = [STATS, CONTY, CONLN, LOCAT, SETCO]
 
 ### Argument Parser ####
 parser = argparse.ArgumentParser(description='Uses the given login information to traverse FakeBook for 5 hidden secret keys')
 parser.add_argument('username', type=str, help="FakeBook username")
 parser.add_argument('password', type=str, help="FakeBook Password")
 args = parser.parse_args()
+
 
 ### Setting up Host and Port ###
 HOST = "fakebook.3700.network"
@@ -85,12 +99,46 @@ def get_csrftoken_and_cookie(request_response):
 # COOKIE = response[cookie_index + 1:].split(";")[0]
 
 # parses a HTTP 1.1 response and converts it to a Dictionary
-def parse_response(response):
-    log("Parsing response...")
+def parse_response(raw_response):
+    log("parse_response: Beginning. Building dictionary...")
+    
+    resp_list = raw_response.splitlines()
+    dictionary = {}
+    
+    for ii in range(len(resp_list)): 
+        curr_line = resp_list[ii]
+        if ii == 0: # adds status on first line
+            log(f"parse_response: {ii}: added [{STATS}] = {curr_line[9:]}")
+            dictionary[STATS] = curr_line[9:]
+        elif curr_line == '': # adds content when first empty line is encountered
+            log(f"parse_response: {ii}: encountered empty line at {ii}, adding rest of response to [{CNTNT}] field")
+            rest = "".join(resp_list[ii + 1:-1])
+            dictionary[CNTNT] = rest
+            break
+        else:
+            temp = curr_line.split(":")
+            header = temp[0]
+            value = temp[1][1:] # trim leading whitespace
+            
+            if header in RELEVANT_HEADERS:
+                if header == SETCO:
+                    temp = value.split('=')                    
+                    if temp[0] == "csrftoken":
+                        header = CSRFT
+                        value = temp[1].split(';')[0] 
+                    elif temp[0] == "sessionid":
+                        header = SESID
+                        value = temp[1]
+                dictionary[header] = value
+                log(f"parse_response: {ii}: added [{header}] = {value}")
+                
+    log(f"parse_response: Finished building dictionary  from response")
+    return dictionary
+            
+        
+        
     
     
-
-
 ################################################################################
 
 
@@ -106,7 +154,8 @@ socket = context.wrap_socket(s, server_hostname=HOST)
 log("Getting initial login page")
 socket.send(get(domain='/accounts/login/?next=/fakebook/').encode())
 page = socket.recv(3000).decode()
-log("Response: " + page + "\n")
+test = parse_response(page)
+# log("Response: " + page + "\n")
 
 # ### Parsing the login page to find the csrf ###
 CSRF = get_csrfmiddlewaretoken(page)
@@ -116,7 +165,9 @@ log("Posting login information.")
 body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={CSRF}'
 socket.send(post(domain='/accounts/login/', body=body).encode())
 response = socket.recv(3000).decode()
-log("Response: " + response + "\n") 
+test = parse_response(response)
+
+# log("Response: " + response + "\n") 
 
 ### Parsing the POST Response to find the cookie ###
 # ''' Make helper to get the cookie'''
@@ -133,3 +184,4 @@ log("Response: " + response + "\n")
 # page = socket.recv(3000).decode()
 #
 # print(page)
+log("Done")
