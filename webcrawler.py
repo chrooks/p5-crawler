@@ -146,7 +146,7 @@ def login():
     log("Posting login information.")
     body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={csrf_midware}'
     # ### Receiving response ###
-    socket.send(post(domain='/accounts/login/', body=body).encode())
+    socket.send(post(domain='/accounts/login/', body=body, csrf=csrf_midware).encode())
     login_response = parse_response(socket.recv(
         3000).decode())  # Parsing the POST Response to find the cookie ###
 
@@ -154,7 +154,7 @@ def login():
     cookie = login_response[SESID]
 
     ### GET Request for homepage ###
-    socket.send(get(domain=response[LOCAT], csrf=csrf, cookie=cookie).encode())
+    socket.send(get(domain=login_response[LOCAT], csrf=csrf, cookie=cookie).encode())
     login_response = parse_response(socket.recv(3000).decode())
 
     return login_response
