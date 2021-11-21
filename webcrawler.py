@@ -11,13 +11,9 @@ import argparse
 import socket
 import ssl
 import gzip
+from bs4 import BeautifulSoup
 
-### Debug ###
-DEBUG = True
-# DEBUG = False
-
-CRLF = '\r\n'
-
+# Headers 
 STATS = "Status Code"
 CONTY = "Content-Type"
 CONLN = "Content-Length"
@@ -30,18 +26,22 @@ SESID = "Session ID"
 
 RELEVANT_HEADERS = [STATS, CONTY, CONLN, LOCAT, SETCO]
 
+# Globals 
+HOST = "fakebook.3700.network"
+PORT = 443
+CSRF = ""
+COOKIE = ""
+
+DEBUG = True
+# DEBUG = False
+
+CRLF = '\r\n'
+
 ### Argument Parser ####
 parser = argparse.ArgumentParser(description='Uses the given login information to traverse FakeBook for 5 hidden secret keys')
 parser.add_argument('username', type=str, help="FakeBook username")
 parser.add_argument('password', type=str, help="FakeBook Password")
 args = parser.parse_args()
-
-
-### Setting up Host and Port ###
-HOST = "fakebook.3700.network"
-PORT = 443
-CSRF = ""
-COOKIE = ""
 
 ###############################################################################
 
@@ -78,7 +78,6 @@ def post(domain, body, has_cookie=False):
               "Host: " + HOST + CRLF + \
               "Content-Type: application/x-www-form-urlencoded" + CRLF + \
               "Content-Length: " + str(len(body)) + CRLF + \
-              "Accept-Encoding: gzip" + CRLF + \
               "Cookie: " + cookie_or_csrf + CRLF + CRLF + \
               body
     #if DEBUG: log(request)
@@ -135,8 +134,7 @@ def parse_response(raw_response):
                 
     log(f"parse_response: Finished building dictionary from response")
     return dictionary
-
-      
+  
 # Goes through login protocol and returns the server's response containing the homepage
 def login():
     ### Setting up the socket ###
@@ -148,20 +146,18 @@ def login():
     response = parse_response(socket.recv(3000).decode())
 
     # ### Parsing the login page to find the csrf ###
-    CSRF_MIDWARE = get_csrfmiddlewaretoken(response[CNTNT])
-    log(f"CSRF from the login page: {CSRF_MIDWARE}")
+    csrf_midware = get_csrfmiddlewaretoken(response[CNTNT])
+    log(f"CSRF from the login page: {csrf_midware}")
 
     # ### POSTing login information ###
     log("Posting login information.")
-    body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={CSRF_MIDWARE}'
+    body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={csrf_midware}'
     # ### Receiving response ###
     socket.send(post(domain='/accounts/login/', body=body).encode())
     login_response = parse_response(socket.recv(3000).decode())   # Parsing the POST Response to find the cookie ###
 
-    log(f"Before logging in: \nCSRF={CSRF_MIDWARE} \nCookie={COOKIE}")
     CSRF = login_response[CSRFT]
     COOKIE = login_response[SESID]
-    log(f"After logging in: \nCSRF={CSRF} \nCookie={COOKIE}")
 
     ### GET Request for homepage ###
     socket.send(get(domain=response[LOCAT], has_cookie=True).encode())
@@ -173,4 +169,6 @@ def login():
 
 response = login()
 homepage = response[CNTNT]
+
 log(homepage)
+
