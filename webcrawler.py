@@ -65,7 +65,6 @@ def get(domain, has_cookie=False):
               "Cookie: " + cookie_or_csrf + CRLF + CRLF
     return request
 
-
 # Generates the POST Request with given headers
 def post(domain, body, has_cookie=False):
     # On initial login, there we do not have a cookie so we must pass the
@@ -85,27 +84,23 @@ def post(domain, body, has_cookie=False):
     #if DEBUG: log(request)
     return request
 
+# Creates and wraps a socket
+def create_sock():
+    log("Creating and wrapping socket...")
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect((socket.gethostbyname(HOST), PORT))
+
+    context = ssl.create_default_context()
+    return context.wrap_socket(s, server_hostname=HOST)
 
 # Get the csrfmiddlewaretoken from given html
 def get_csrfmiddlewaretoken(page):
     csrf_index = page.index("csrfmiddlewaretoken\" value=\"") + 28
     return page[csrf_index:].split("\"")[0]
 
-
-# Get the csrftoken and sessionId from response
-def get_csrftoken_and_cookie(request_response):
-    log("Getting CSRF and Session Id")
-    cookie_index = response.index("Set-Cookie: sessionid=") + 22
-    cook = response[cookie_index:].split(";")[0]
-
-    token_index = response.index("Set-Cookie: csrftoken=") + 22
-    token = response[token_index:].split(";")[0]
-
-    return token, cook
-
 # parses a HTTP 1.1 response and converts it to a Dictionary
 def parse_response(raw_response):
-    log("parse_response: Beginning. Building dictionary...")
+    # log("parse_response: Beginning. Building dictionary...")
     
     resp_list = raw_response.splitlines()
     dictionary = {}
@@ -114,12 +109,12 @@ def parse_response(raw_response):
         curr_line = resp_list[ii]
         
         if ii == 0: # adds status on first line
-            log(f"parse_response: {ii}: added [{STATS}] = {curr_line[9:]}")
+            # log(f"parse_response: {ii}: added [{STATS}] = {curr_line[9:]}")
             dictionary[STATS] = curr_line[9:]
             
         elif curr_line == '': 
             # adds content when first empty line is encountered
-            log(f"parse_response: {ii}: encountered empty line, adding rest of response to [{CNTNT}] field")
+            # log(f"parse_response: {ii}: encountered empty line, adding rest of response to [{CNTNT}] field")
             rest = "".join(resp_list[ii + 1:-1]) 
             dictionary[CNTNT] = rest
             break
@@ -136,54 +131,46 @@ def parse_response(raw_response):
                     value = temp[1].split(';')[0] 
                         
                 dictionary[header] = value
-                log(f"parse_response: {ii}: added [{header}] = {value}")
+                # log(f"parse_response: {ii}: added [{header}] = {value}")
                 
-    log(f"parse_response: Finished building dictionary  from response")
+    log(f"parse_response: Finished building dictionary from response")
     return dictionary
-            
+
+      
+# Goes through login protocol and returns the server's response containing the homepage
+def login():
+    ### Setting up the socket ###
+    socket = create_sock()
+
+    ### GET Request for login page (to get csrf token) ###
+    log("Getting initial login page")
+    socket.send(get(domain='/accounts/login/?next=/fakebook/').encode())
+    response = parse_response(socket.recv(3000).decode())
+
+    # ### Parsing the login page to find the csrf ###
+    CSRF_MIDWARE = get_csrfmiddlewaretoken(response[CNTNT])
+    log(f"CSRF from the login page: {CSRF_MIDWARE}")
+
+    # ### POSTing login information ###
+    log("Posting login information.")
+    body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={CSRF_MIDWARE}'
+    # ### Receiving response ###
+    socket.send(post(domain='/accounts/login/', body=body).encode())
+    login_response = parse_response(socket.recv(3000).decode())   # Parsing the POST Response to find the cookie ###
+
+    log(f"Before logging in: \nCSRF={CSRF_MIDWARE} \nCookie={COOKIE}")
+    CSRF = login_response[CSRFT]
+    COOKIE = login_response[SESID]
+    log(f"After logging in: \nCSRF={CSRF} \nCookie={COOKIE}")
+
+    ### GET Request for homepage ###
+    socket.send(get(domain=response[LOCAT], has_cookie=True).encode())
+    login_response = parse_response(socket.recv(3000).decode())
+    
+    return login_response
     
 ################################################################################
 
-
-### Setting up the socket ###
-log("Creating and wrapping socket...")
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((socket.gethostbyname(HOST), PORT))  # Connects to the socket
-
-context = ssl.create_default_context()
-socket = context.wrap_socket(s, server_hostname=HOST)
-
-### GET Request for login page (to get csrf token) ###
-log("Getting initial login page")
-socket.send(get(domain='/accounts/login/?next=/fakebook/').encode())
-page = socket.recv(3000).decode()
-# log("Response: " + page + "\n")
-
-# ### Parsing the login page to find the csrf ###
-CSRF = get_csrfmiddlewaretoken(page)
-log(f"CSRF from the login page: {CSRF}")
-
-# ### Creating the POST Request ###
-log("Posting login information.")
-body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={CSRF}'
-
-# ### Receiving response ###
-socket.send(post(domain='/accounts/login/', body=body).encode())
-response = socket.recv(3000).decode()
-
-# log("Response: " + response + "\n") 
-
-### Parsing the POST Response to find the cookie ###
-log(f"Before logging in: \nCSRF={CSRF} \nCookie={COOKIE}")
-response_dict = parse_response(response)
-CSRF = response_dict[CSRFT]
-COOKIE = response_dict[SESID]
-log(f"After logging in: \nCSRF={CSRF} \nCookie={COOKIE}")
-
-
-### GET Request for homepage ###
-''' Make helper to get the current location of the domain from the POST'''
-socket.send(get(domain=response_dict[LOCAT], has_cookie=True).encode())
-page = socket.recv(3000).decode()
-
-print(page)
+response = login()
+homepage = response[CNTNT]
+log(homepage)
