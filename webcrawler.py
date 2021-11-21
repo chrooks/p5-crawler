@@ -10,7 +10,7 @@ import sys
 import argparse
 import socket
 import ssl
-import
+import gzip
 
 ### Debug ###
 DEBUG = True
