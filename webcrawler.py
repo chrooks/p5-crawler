@@ -10,10 +10,11 @@ import sys
 import argparse
 import socket
 import ssl
+import
 
 ### Debug ###
-# DEBUG = True
-DEBUG = False
+DEBUG = True
+# DEBUG = False
 
 CRLF = '\r\n'
 
@@ -22,7 +23,6 @@ CONTY = "Content-Type"
 CONLN = "Content-Length"
 LOCAT = "Location"
 SETCO = "Set-Cookie"
-CONEC = "Connection"
 
 CNTNT = "Content"
 CSRFT = "CSRF Token"
@@ -43,7 +43,7 @@ PORT = 443
 CSRF = ""
 COOKIE = ""
 
-################################################################################
+###############################################################################
 
 # Writes given log message to stderr
 def log(string):
@@ -56,7 +56,7 @@ def get(domain, has_cookie=False):
         cookie_or_csrf = "csrftoken=" + CSRF + "; sessionid=" + COOKIE
         log(f"Submitting GET request to {domain} using cookie: {cookie_or_csrf}.")
     else:
-        log(f"Submitting GET request to {domain}.")
+        log(f"Submitting GET request to {domain}")
         cookie_or_csrf = "csrftoken=" + CSRF
 
     ''' Implement gzip encoding '''
@@ -157,7 +157,6 @@ socket = context.wrap_socket(s, server_hostname=HOST)
 log("Getting initial login page")
 socket.send(get(domain='/accounts/login/?next=/fakebook/').encode())
 page = socket.recv(3000).decode()
-test = parse_response(page)
 # log("Response: " + page + "\n")
 
 # ### Parsing the login page to find the csrf ###
@@ -171,18 +170,20 @@ body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfm
 # ### Receiving response ###
 socket.send(post(domain='/accounts/login/', body=body).encode())
 response = socket.recv(3000).decode()
-test = parse_response(response)
 
 # log("Response: " + response + "\n") 
 
 ### Parsing the POST Response to find the cookie ###
-CSRF, COOKIE = get_csrftoken_and_cookie(response)
+log(f"Before logging in: \nCSRF={CSRF} \nCookie={COOKIE}")
+response_dict = parse_response(response)
+CSRF = response_dict[CSRFT]
+COOKIE = response_dict[SESID]
 log(f"After logging in: \nCSRF={CSRF} \nCookie={COOKIE}")
 
 
 ### GET Request for homepage ###
 ''' Make helper to get the current location of the domain from the POST'''
-socket.send(get(domain='/fakebook/', has_cookie=True).encode())
+socket.send(get(domain=response_dict[LOCAT], has_cookie=True).encode())
 page = socket.recv(3000).decode()
 
-#print(page)
+print(page)
