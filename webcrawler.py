@@ -12,8 +12,8 @@ import socket
 import ssl
 
 ### Debug ###
-DEBUG = True
-# DEBUG = False
+# DEBUG = True
+DEBUG = False
 
 CRLF = '\r\n'
 
