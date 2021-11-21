@@ -111,37 +111,35 @@ def parse_response(raw_response):
     
     for ii in range(len(resp_list)): 
         curr_line = resp_list[ii]
+        
         if ii == 0: # adds status on first line
             log(f"parse_response: {ii}: added [{STATS}] = {curr_line[9:]}")
             dictionary[STATS] = curr_line[9:]
+            
         elif curr_line == '': # adds content when first empty line is encountered
             log(f"parse_response: {ii}: encountered empty line at {ii}, adding rest of response to [{CNTNT}] field")
             rest = "".join(resp_list[ii + 1:-1])
             dictionary[CNTNT] = rest
             break
+        
         else:
             temp = curr_line.split(":")
             header = temp[0]
             value = temp[1][1:] # trim leading whitespace
             
             if header in RELEVANT_HEADERS:
+                
                 if header == SETCO:
                     temp = value.split('=')                    
-                    if temp[0] == "csrftoken":
-                        header = CSRFT
-                        value = temp[1].split(';')[0] 
-                    elif temp[0] == "sessionid":
-                        header = SESID
-                        value = temp[1]
+                    header = CSRFT if temp[0] == "csrftoken" else SESID
+                    value = temp[1].split(';')[0] 
+                        
                 dictionary[header] = value
                 log(f"parse_response: {ii}: added [{header}] = {value}")
                 
     log(f"parse_response: Finished building dictionary  from response")
     return dictionary
             
-        
-        
-    
     
 ################################################################################
 
