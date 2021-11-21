@@ -54,6 +54,7 @@ def get(domain, csrf="", cookie=""):
     ''' Implement gzip encoding '''
     request = "GET " + domain + " HTTP/1.1" + CRLF + \
               "Host: " + HOST + CRLF + \
+              "Accept-Encoding: gzip" + \
               "Cookie: " + "csrftoken=" + csrf + "; sessionid=" + cookie + CRLF + CRLF
     return request
 
@@ -68,6 +69,7 @@ def post(domain, body, csrf="", cookie=""):
               "Host: " + HOST + CRLF + \
               "Content-Type: application/x-www-form-urlencoded" + CRLF + \
               "Content-Length: " + str(len(body)) + CRLF + \
+              "Accept-Encoding: gzip" + \
               "Cookie: " + cookie_or_csrf + CRLF + CRLF + \
               body
     return request
