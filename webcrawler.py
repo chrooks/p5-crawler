@@ -7,7 +7,7 @@ password: IO0VSGNDMCJ5E41Q
 '''
 
 import sys
-import argparse 
+import argparse
 import socket
 import ssl
 
@@ -49,7 +49,7 @@ def log(string):
   if DEBUG: sys.stderr.write("DEBUG: " + string + "\n")
 
 # Generates the GET Request with given headers
-def get(domain, referer="", has_cookie=False):
+def get(domain, has_cookie=False):
     
     if (has_cookie):
         cookie_or_csrf = "csrftoken=" + CSRF + "; sessionid=" + COOKIE
@@ -61,7 +61,6 @@ def get(domain, referer="", has_cookie=False):
     ''' Implement gzip encoding '''
     request = "GET " + domain + " HTTP/1.1" + CRLF + \
               "Host: " + HOST + CRLF + \
-              "Referer: " + referer + CRLF + \
               "Cookie: " + cookie_or_csrf + CRLF + CRLF
     return request
 
@@ -94,9 +93,14 @@ def get_csrfmiddlewaretoken(page):
 
 # Get the csrftoken and sessionId from response
 def get_csrftoken_and_cookie(request_response):
-    log("")
-# cookie_index = response.index("Set-Cookie: sessionid=") + 22
-# COOKIE = response[cookie_index + 1:].split(";")[0]
+    log("Getting CSRF and Session Id")
+    cookie_index = response.index("Set-Cookie: sessionid=") + 22
+    cook = response[cookie_index:].split(";")[0]
+
+    token_index = response.index("Set-Cookie: csrftoken=") + 22
+    token = response[token_index:].split(";")[0]
+
+    return token, cook
 
 # parses a HTTP 1.1 response and converts it to a Dictionary
 def parse_response(raw_response):
@@ -159,6 +163,7 @@ test = parse_response(page)
 
 # ### Parsing the login page to find the csrf ###
 CSRF = get_csrfmiddlewaretoken(page)
+log(f"CSRF from the login page: {CSRF}")
 
 # ### Creating the POST Request ###
 log("Posting login information.")
@@ -170,18 +175,13 @@ test = parse_response(response)
 # log("Response: " + response + "\n") 
 
 ### Parsing the POST Response to find the cookie ###
-# ''' Make helper to get the cookie'''
-# cookie_index = response.index("Set-Cookie: sessionid=") + 22
-# COOKIE = response[cookie_index + 1:].split(";")[0]
-#
-# ''' Use helper to get the csrf'''
-#
-#
-# ### GET Request for homepage ###
-# ''' Make helper to get the current location of the domain from the POST'''
-# referer = 'https://fakebook.3700.network/accounts/login/?next=/fakebook/'
-# socket.send(get(domain='/fakebook/', referer=referer, has_cookie=True).encode())
-# page = socket.recv(3000).decode()
-#
-# print(page)
-log("Done")
+CSRF, COOKIE = get_csrftoken_and_cookie(response)
+log(f"After logging in: \nCSRF={CSRF} \nCookie={COOKIE}")
+
+
+### GET Request for homepage ###
+''' Make helper to get the current location of the domain from the POST'''
+socket.send(get(domain='/fakebook/', has_cookie=True).encode())
+page = socket.recv(3000).decode()
+
+#print(page)
