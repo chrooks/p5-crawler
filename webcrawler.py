@@ -116,7 +116,7 @@ log("Posting login information.")
 body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={CSRF}'
 socket.send(post(domain='/accounts/login/', body=body).encode())
 response = socket.recv(3000).decode()
-log("Response: " + response + "\n")
+log("Response: " + response + "\n") 
 
 ### Parsing the POST Response to find the cookie ###
 # ''' Make helper to get the cookie'''
