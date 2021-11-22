@@ -55,6 +55,7 @@ def log(string):
 
 # Generates the GET Request with given headers
 def get(domain, csrf="", cookie=""):
+    log(f"Submitting GET request to {domain} with {cookie}")
     ''' Implement gzip encoding '''
     request = "GET " + domain + " HTTP/1.1" + CRLF + \
               "Host: " + HOST + CRLF + \
@@ -68,6 +69,7 @@ def post(domain, body, csrf="", cookie=""):
     # csrf token in the cookie header
     cookie_or_csrf = "csrftoken=" + csrf if (len(csrf) > 0) else cookie
 
+    log(f"Submitting POST request to {domain} with {cookie}")
     request = "POST " + domain + " HTTP/1.1" + CRLF + \
               "Host: " + HOST + CRLF + \
               "Content-Type: application/x-www-form-urlencoded" + CRLF + \
@@ -128,7 +130,7 @@ def parse_response(raw_response):
                 dictionary[header] = value
                 # log(f"parse_response: {ii}: added [{header}] = {value}")
 
-    log(f"parse_response: Finished building dictionary from response")
+    log(f"Parsed response: {dictionary[STATS]}")
     return dictionary
   
 # Goes through login protocol and returns the server's response containing the homepage
@@ -166,6 +168,8 @@ def login():
 ################################################################################
 
 (response, sock) = login()
+log("SUCCESSFULY LOGGED IN")
+
 
 FRONTIER = deque()
 VISTED_PAGES = []
@@ -186,17 +190,17 @@ while True:
         if len(SECRET_FLAGS) == 5: break
     
     # Populate frontier
-    for link in soup.findAll('a'):
+    for link in soup.findAll('li'):
         temp = link.get('href')
         if temp not in VISTED_PAGES: 
             log(f"Addding {temp} to frontier.")
             FRONTIER.append(temp)
     
     # Jump to first thing in FRONTIER
-    log("Moving on to next page")
     
     next_url = FRONTIER.popleft()
     VISTED_PAGES.append(next_url)
+    log(f"Moving to next page: {next_url}\n")
     
     sock.send(get(domain=next_url, cookie=curr_cookie).encode())
     response = parse_response(sock.recv(3000).decode())
