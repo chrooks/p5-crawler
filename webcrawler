@@ -180,7 +180,7 @@ while True:
     
     # Check for secret flag
     secret_flag = soup.find(class_ = 'secret_flag')
-    if secret_flag != None:
+    if secret_flag != None and secret_flag.text[6:] not in SECRET_FLAGS:
         sys.stderr.write(f"FOUND A SECRET FLAG: {secret_flag.text[6:]}\n")
         SECRET_FLAGS.append(secret_flag.text[6:])
         if len(SECRET_FLAGS) == 5: break
