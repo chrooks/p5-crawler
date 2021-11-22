@@ -201,8 +201,7 @@ while True:
         sys.stderr.write(f"Visited {len(VISTED_PAGES)} pages\n")
         sys.stderr.write(f"There are {len(FRONTIER)} pages currently in the Frontier\n")
         sys.stderr.write(f"{len(SECRET_FLAGS)} flag(s) have been found\n\n")
-    
-    # sys.stderr.write(f"Visited {len(VISTED_PAGES)} pages\n")    
+       
     log(f"Moving to next page: {next_url}\n")
     
     sock.send(get(domain=next_url, cookie=curr_cookie).encode())
@@ -220,6 +219,6 @@ while True:
     
     curr_page = response[CNTNT]
     if SESID in response: curr_cookie = response[SESID]
-    
+
 for flag in SECRET_FLAGS:
     sys.stderr.write(flag + '\n')
