@@ -11,6 +11,7 @@ import argparse
 import socket
 import ssl
 import gzip
+from collections import deque
 from bs4 import BeautifulSoup
 
 # Headers 
@@ -19,12 +20,13 @@ CONTY = "Content-Type"
 CONLN = "Content-Length"
 LOCAT = "Location"
 SETCO = "Set-Cookie"
+CONEC = "Connection"
 
 CNTNT = "Content"
 CSRFT = "CSRF Token"
 SESID = "Session ID"
 
-RELEVANT_HEADERS = [STATS, CONTY, CONLN, LOCAT, SETCO]
+RELEVANT_HEADERS = [STATS, CONTY, CONLN, LOCAT, SETCO, CONEC]
 
 # Globals 
 HOST = "fakebook.3700.network"
@@ -56,7 +58,6 @@ def get(domain, csrf="", cookie=""):
     ''' Implement gzip encoding '''
     request = "GET " + domain + " HTTP/1.1" + CRLF + \
               "Host: " + HOST + CRLF + \
-              "Accept-Encoding: gzip" + \
               "Cookie: " + "csrftoken=" + csrf + "; sessionid=" + cookie + CRLF + CRLF
     return request
 
@@ -71,7 +72,6 @@ def post(domain, body, csrf="", cookie=""):
               "Host: " + HOST + CRLF + \
               "Content-Type: application/x-www-form-urlencoded" + CRLF + \
               "Content-Length: " + str(len(body)) + CRLF + \
-              "Accept-Encoding: gzip" + \
               "Cookie: " + cookie_or_csrf + CRLF + CRLF + \
               body
     return request
@@ -110,7 +110,7 @@ def parse_response(raw_response):
         elif curr_line == '':
             # adds content when first empty line is encountered
             # log(f"parse_response: {ii}: encountered empty line, adding rest of response to [{CNTNT}] field")
-            rest = "".join(resp_list[ii + 1:-1])
+            rest = CRLF.join(resp_list[ii + 1:-1])
             dictionary[CNTNT] = rest
             break
 
@@ -166,7 +166,35 @@ def login():
 ################################################################################
 
 response = login()
-homepage = response[CNTNT]
 
-log(homepage)
+FRONTIER = deque()
+VISTED_PAGES = []
+SECRET_FLAGS = []
 
+curr_page = response[CNTNT]
+curr_cookie = response[SESID]
+
+while True:    
+    # Parse page
+    soup = BeautifulSoup(curr_page, 'html.parser')
+    
+    # Check for secret flag
+    secret_flag = soup.find('secret_flag')
+    if secret_flag != None:
+        SECRET_FLAGS.append(secret_flag)
+    
+    # Populate frontier
+    for link in soup.findAll('a'):
+        FRONTIER.append(link.get('href'))
+    
+    # Jump to first thing in FRONTIER
+    log("Getting initial login page")
+    
+    url = FRONTIER.popleft()
+    
+    socket.send(get(domain=url, cookie=curr_cookie).encode())
+    response = parse_response(socket.recv(3000).decode())
+    
+    curr_page = response[CNTNT]
+    curr_cookie = response[SESID]
+    
