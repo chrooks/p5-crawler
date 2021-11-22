@@ -141,7 +141,7 @@ def login():
     ### GET Request for login page (to get csrf token) ###
     log("Getting initial login page")
     socket.send(get(domain='/accounts/login/?next=/fakebook/').encode())
-    response = parse_response(socket.recv(3000).decode())
+    response = parse_response(socket.recv(10000).decode())
 
     # ### Parsing the login page to find the csrf ###
     csrf_midware = get_csrfmiddlewaretoken(response[CNTNT])
@@ -160,7 +160,7 @@ def login():
 
     ### GET Request for homepage ###
     socket.send(get(domain=login_response[LOCAT], csrf=csrf, cookie=cookie).encode())
-    login_response = parse_response(socket.recv(3000).decode())
+    login_response = parse_response(socket.recv(10000).decode())
 
     return (login_response, socket)
 
@@ -185,14 +185,14 @@ while True:
     # Check for secret flag
     secret_flag = soup.find('secret_flag')
     if secret_flag != None:
-        log("FOUND A SECRET FLAG: {secret_flag}\n")
+        sys.stderr.write("FOUND A SECRET FLAG: {secret_flag}\n")
         SECRET_FLAGS.append(secret_flag)
         if len(SECRET_FLAGS) == 5: break
     
     # Populate frontier
-    for link in soup.findAll('li'):
+    for link in soup.findAll('a'):
         temp = link.get('href')
-        if temp not in VISTED_PAGES: 
+        if temp not in VISTED_PAGES and "/fakebook" in temp: 
             log(f"Addding {temp} to frontier.")
             FRONTIER.append(temp)
     
@@ -203,9 +203,17 @@ while True:
     log(f"Moving to next page: {next_url}\n")
     
     sock.send(get(domain=next_url, cookie=curr_cookie).encode())
-    response = parse_response(sock.recv(3000).decode())
+    data = sock.recv(10000).decode()
+    if len(data) > 0:
+        response = parse_response(data)
+    else:
+        log("Something went wrong while receiving data from socket. Aborting...")
+        exit(1)
     # Handle Errors
     # Check connection
+    if response[CONEC] == "close":
+        log("Connection closed. Opening a new socket...")
+        sock = create_sock()
     
     curr_page = response[CNTNT]
     if SESID in response: curr_cookie = response[SESID]
