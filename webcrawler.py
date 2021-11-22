@@ -189,7 +189,7 @@ while True:
         SECRET_FLAGS.append(secret_flag)
         if len(SECRET_FLAGS) == 5: break
     
-    # Populate frontier
+    # Populate the frontier
     for link in soup.findAll('a'):
         temp = link.get('href')
         if temp not in VISTED_PAGES and "/fakebook" in temp: 
