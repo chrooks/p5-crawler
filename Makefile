@@ -1,9 +1,16 @@
-venv: venv/bin/activate
+VENV = venv
+PYTHON = $(VENV)/bin/python3
+PIP = $(VENV)/bin/pip
 
-venv/bin/activate: requirements.txt
-	python3 -m venv venv
-	./venv/bin/pip install -r requirements.txt
+venv: $(VENV)/touchfile
+
+venv/touchfile: requirements.txt
+	$(PYTHON) -m venv $(VENV)
+	. venv/bin/activate; $(PIP) install -Ur requirements.txt
+	touch venv/touchfile
 
 clean:
-	rm -rf venv
+	rm -rf $(VENV)
 	find . -type f -name '*.pyc' -delete
+
+	
