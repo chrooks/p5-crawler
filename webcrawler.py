@@ -34,8 +34,8 @@ PORT = 443
 CSRF = ""
 COOKIE = ""
 
-DEBUG = True
-# DEBUG = False
+# DEBUG = True
+DEBUG = False
 
 CRLF = '\r\n'
 
@@ -167,6 +167,8 @@ def login():
 
 ################################################################################
 
+sys.stderr.write("STARTING PROGRAM\n")
+
 (response, sock) = login()
 log("SUCCESSFULY LOGGED IN")
 
@@ -200,6 +202,13 @@ while True:
     
     next_url = FRONTIER.popleft()
     VISTED_PAGES.append(next_url)
+
+    if len(VISTED_PAGES) % 250 == 0:
+        sys.stderr.write(f"Visited {len(VISTED_PAGES)} pages\n")
+        sys.stderr.write(f"There are {len(FRONTIER)} pages currently in the Frontier\n")
+        sys.stderr.write(f"{len(SECRET_FLAGS)} have been found\n")
+    
+    # sys.stderr.write(f"Visited {len(VISTED_PAGES)} pages\n")    
     log(f"Moving to next page: {next_url}\n")
     
     sock.send(get(domain=next_url, cookie=curr_cookie).encode())
@@ -218,6 +227,4 @@ while True:
     curr_page = response[CNTNT]
     if SESID in response: curr_cookie = response[SESID]
     
-
 print(SECRET_FLAGS)
-    
