@@ -1,11 +1,5 @@
 #!./venv/bin/python3
 
-'''
-Your login credentials for Fakebook are:
-username: brooks.ch
-password: IO0VSGNDMCJ5E41Q
-'''
-
 import sys
 import argparse
 import socket
