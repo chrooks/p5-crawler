@@ -52,6 +52,7 @@ def get(domain, csrf="", cookie=""):
     ''' Implement gzip encoding '''
     request = "GET " + domain + " HTTP/1.1" + CRLF + \
               "Host: " + HOST + CRLF + \
+              "Connection: keep-alive" + CRLF + \
               "Cookie: " + "csrftoken=" + csrf + "; sessionid=" + cookie + CRLF + CRLF
     return request
 
@@ -65,6 +66,7 @@ def post(domain, body, csrf="", cookie=""):
     log(f"Submitting POST request to {domain} with {cookie}")
     request = "POST " + domain + " HTTP/1.1" + CRLF + \
               "Host: " + HOST + CRLF + \
+              "Connection: keep-alive" + CRLF + \
               "Content-Type: application/x-www-form-urlencoded" + CRLF + \
               "Content-Length: " + str(len(body)) + CRLF + \
               "Cookie: " + cookie_or_csrf + CRLF + CRLF + \
@@ -181,7 +183,7 @@ while True:
     # Check for secret flag
     secret_flag = soup.find(class_ = 'secret_flag')
     if secret_flag != None and secret_flag.text[6:] not in SECRET_FLAGS:
-        sys.stderr.write(f"FOUND A SECRET FLAG: {secret_flag.text[6:]}\n")
+        sys.stderr.write(f"FOUND A SECRET FLAG: {secret_flag.text[6:]}\n\n")
         SECRET_FLAGS.append(secret_flag.text[6:])
         if len(SECRET_FLAGS) == 5: break
     
@@ -221,4 +223,4 @@ while True:
     if SESID in response: curr_cookie = response[SESID]
 
 for flag in SECRET_FLAGS:
-    sys.stderr.write(flag + '\n')
+    sys.stdout.write(flag + '\n')
