@@ -183,10 +183,10 @@ while True:
     soup = BeautifulSoup(curr_page, 'html.parser')
     
     # Check for secret flag
-    secret_flag = soup.find('secret_flag')
+    secret_flag = soup.find(class_ = 'secret_flag')
     if secret_flag != None:
-        sys.stderr.write("FOUND A SECRET FLAG: {secret_flag}\n")
-        SECRET_FLAGS.append(secret_flag)
+        sys.stderr.write(f"FOUND A SECRET FLAG: {secret_flag.text}\n")
+        SECRET_FLAGS.append(secret_flag.text)
         if len(SECRET_FLAGS) == 5: break
     
     # Populate the frontier
