@@ -160,12 +160,12 @@ def login():
     socket.send(get(domain=login_response[LOCAT], csrf=csrf, cookie=cookie).encode())
     login_response = parse_response(socket.recv(3000).decode())
 
-    return login_response
+    return (login_response, socket)
 
 
 ################################################################################
 
-response = login()
+(response, sock) = login()
 
 FRONTIER = deque()
 VISTED_PAGES = []
@@ -181,20 +181,31 @@ while True:
     # Check for secret flag
     secret_flag = soup.find('secret_flag')
     if secret_flag != None:
+        log("FOUND A SECRET FLAG: {secret_flag}\n")
         SECRET_FLAGS.append(secret_flag)
+        if len(SECRET_FLAGS) == 5: break
     
     # Populate frontier
     for link in soup.findAll('a'):
-        FRONTIER.append(link.get('href'))
+        temp = link.get('href')
+        if temp not in VISTED_PAGES: 
+            log(f"Addding {temp} to frontier.")
+            FRONTIER.append(temp)
     
     # Jump to first thing in FRONTIER
-    log("Getting initial login page")
+    log("Moving on to next page")
     
-    url = FRONTIER.popleft()
+    next_url = FRONTIER.popleft()
+    VISTED_PAGES.append(next_url)
     
-    socket.send(get(domain=url, cookie=curr_cookie).encode())
-    response = parse_response(socket.recv(3000).decode())
+    sock.send(get(domain=next_url, cookie=curr_cookie).encode())
+    response = parse_response(sock.recv(3000).decode())
+    # Handle Errors
+    # Check connection
     
     curr_page = response[CNTNT]
-    curr_cookie = response[SESID]
+    if SESID in response: curr_cookie = response[SESID]
+    
+
+print(SECRET_FLAGS)
     
