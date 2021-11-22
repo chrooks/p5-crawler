@@ -10,7 +10,6 @@ import sys
 import argparse
 import socket
 import ssl
-import gzip
 from collections import deque
 from bs4 import BeautifulSoup
 
@@ -150,6 +149,7 @@ def login():
     # ### POSTing login information ###
     log("Posting login information.")
     body = f'next=/fakebook/&username={args.username}&password={args.password}&csrfmiddlewaretoken={csrf_midware}'
+    
     # ### Receiving response ###
     socket.send(post(domain='/accounts/login/', body=body, csrf=csrf_midware).encode())
     login_response = parse_response(socket.recv(
@@ -167,7 +167,7 @@ def login():
 
 ################################################################################
 
-sys.stderr.write("STARTING PROGRAM\n")
+sys.stderr.write("Starting program\n")
 
 (response, sock) = login()
 log("SUCCESSFULY LOGGED IN")
@@ -187,8 +187,8 @@ while True:
     # Check for secret flag
     secret_flag = soup.find(class_ = 'secret_flag')
     if secret_flag != None:
-        sys.stderr.write(f"FOUND A SECRET FLAG: {secret_flag.text}\n")
-        SECRET_FLAGS.append(secret_flag.text)
+        sys.stderr.write(f"FOUND A SECRET FLAG: {secret_flag.text[6:]}\n")
+        SECRET_FLAGS.append(secret_flag.text[6:])
         if len(SECRET_FLAGS) == 5: break
     
     # Populate the frontier
@@ -206,7 +206,7 @@ while True:
     if len(VISTED_PAGES) % 250 == 0:
         sys.stderr.write(f"Visited {len(VISTED_PAGES)} pages\n")
         sys.stderr.write(f"There are {len(FRONTIER)} pages currently in the Frontier\n")
-        sys.stderr.write(f"{len(SECRET_FLAGS)} have been found\n")
+        sys.stderr.write(f"{len(SECRET_FLAGS)} flag(s) have been found\n\n")
     
     # sys.stderr.write(f"Visited {len(VISTED_PAGES)} pages\n")    
     log(f"Moving to next page: {next_url}\n")
@@ -218,7 +218,7 @@ while True:
     else:
         log("Something went wrong while receiving data from socket. Aborting...")
         exit(1)
-    # Handle Errors
+        
     # Check connection
     if response[CONEC] == "close":
         log("Connection closed. Opening a new socket...")
@@ -227,4 +227,5 @@ while True:
     curr_page = response[CNTNT]
     if SESID in response: curr_cookie = response[SESID]
     
-print(SECRET_FLAGS)
+for flag in SECRET_FLAGS:
+    sys.stderr.write(flag + '\n')
