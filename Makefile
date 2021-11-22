@@ -5,7 +5,7 @@ PIP = $(VENV)/bin/pip
 venv: $(VENV)/touchfile
 
 venv/touchfile: requirements.txt
-	$(PYTHON) -m venv $(VENV)
+	python3 -m venv $(VENV)
 	. venv/bin/activate; $(PIP) install -Ur requirements.txt
 	touch venv/touchfile
 
