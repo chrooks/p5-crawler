@@ -131,7 +131,8 @@ def parse_response(raw_response):
 
     log(f"Parsed response: {dictionary[STATS]}")
     return dictionary
-  
+
+
 # Goes through login protocol and returns the server's response containing the homepage
 def login():
     ### Setting up the socket ###
@@ -154,6 +155,10 @@ def login():
     socket.send(post(domain='/accounts/login/', body=body, csrf=csrf_midware).encode())
     login_response = parse_response(socket.recv(
         3000).decode())  # Parsing the POST Response to find the cookie ###
+
+    if int(login_response[STATS]) >= 400:
+        log("Login failed" + CNTNT)
+        exit(1)
 
     csrf = login_response[CSRFT]
     cookie = login_response[SESID]
